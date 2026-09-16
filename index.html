@@ -453,6 +453,29 @@
       previewBox.appendChild(sp);
     });
     }
+   const grid = document.getElementById("palette-grid");
+  PALETTES.forEach((p, index) => {
+    const btn = document.createElement("button");
+    btn.className = "palette-btn" + (index === 0 ? " active" : "");
+    
+    const title = document.createElement("span");
+    title.textContent = p.name;
+    btn.appendChild(title);
+
+    const bar = document.createElement("div");
+    bar.className = "palette-bar";
+    bar.style.background = `linear-gradient(90deg, ${p.stops.join(", ")})`;
+    btn.appendChild(bar);
+
+    btn.onclick = () => {
+      document.querySelectorAll(".palette-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedStops = p.stops;
+      update();
+    };
+
+    grid.appendChild(btn);
+  });
 
     if (effectiveMode === 'char') {
       const chars = Array.from(text);
