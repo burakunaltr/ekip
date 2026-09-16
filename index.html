@@ -76,35 +76,6 @@
       margin-bottom: -0.4rem;
     }
 
-    .mode-selector {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 0.4rem;
-      background: var(--input-bg);
-      padding: 0.35rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    .mode-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 0.55rem 0.5rem;
-      font-weight: 600;
-      font-size: 0.8rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-    }
-
-    .mode-btn.active {
-      background: var(--panel);
-      color: #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-
     input[type="text"] {
       background: var(--input-bg);
       border: 1px solid var(--border);
@@ -272,15 +243,21 @@
       margin-top: -0.4rem;
     }
 
+    .badge-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
     .char-badge {
       font-weight: bold;
       padding: 0.2rem 0.5rem;
       border-radius: 4px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
     }
 
-    .char-safe { color: #56d364; }
-    .char-warn { color: #e3b341; }
-    .char-danger { color: #f85149; }
+    .char-safe { color: #56d364; border-color: rgba(86, 211, 100, 0.3); }
+    .char-warn { color: #e3b341; border-color: rgba(227, 179, 65, 0.3); }
 
     .btn-main-copy {
       background: var(--accent);
@@ -314,18 +291,10 @@
 <div class="container">
   <header>
     <h1>Metin2 Chat Renk & Gradyan Oluşturucu</h1>
-    <p>256 karakter tamponuna tam uyumlu, kesintisiz renk geçişi oluşturucu.</p>
+    <p>Akıllı boyut optimizasyonu ile tampon sınırına tam uyumlu çalışan renk üretici.</p>
   </header>
 
   <div class="card">
-    <div class="field-title">Geçiş Hassasiyeti</div>
-    <div class="mode-selector">
-      <button class="mode-btn active" id="mode-auto" onclick="setMode('auto')">⚡ Akıllı Otomatik (Önerilen)</button>
-      <button class="mode-btn" id="mode-char" onclick="setMode('char')">🔤 Harf Harf (Kısa Kelimeler)</button>
-      <button class="mode-btn" id="mode-chunk" onclick="setMode('chunk')">✨ 2'şer Harf (Uzun Yazılar)</button>
-      <button class="mode-btn" id="mode-word" onclick="setMode('word')">📝 Kelime Kelime</button>
-    </div>
-
     <div class="field-title">Yazılacak Mesaj</div>
     <input type="text" id="chat-text" value="SATILIK" placeholder="Mesajınızı yazın..." />
 
@@ -358,8 +327,11 @@
     </div>
 
     <div class="status-bar">
-      <span id="limit-msg">Metin2 istemci tampon sınırı 256 karakterdir.</span>
-      <span id="char-indicator" class="char-badge char-safe">0 / 256 Karakter</span>
+      <span id="optimization-info">Matematiksel optimizasyon devrede.</span>
+      <div class="badge-group">
+        <span id="chunk-indicator" class="char-badge">Tek Harf Modu</span>
+        <span id="char-indicator" class="char-badge char-safe">0 / 220</span>
+      </div>
     </div>
 
     <button class="btn-main-copy" id="copy-code-btn">📋 Dönüştürülmüş Kodu Kopyala</button>
@@ -367,8 +339,6 @@
 </div>
 
 <script>
-  let currentMode = 'auto';
-
   const PALETTES = [
     { name: "🔥 Altın Alevi", stops: ["#FF4500", "#FFB700", "#FFFFFF"] },
     { name: "⚡ Elektrik Neon", stops: ["#0055FF", "#00F0FF", "#FFFFFF"] },
@@ -386,14 +356,6 @@
   ];
 
   let selectedStops = PALETTES[0].stops;
-
-  function setMode(mode) {
-    currentMode = mode;
-    ['auto', 'char', 'chunk', 'word'].forEach(m => {
-      document.getElementById(`mode-${m}`).classList.toggle('active', m === mode);
-    });
-    update();
-  }
 
   function hexToRgb(hex) {
     hex = hex.replace("#", "");
@@ -432,127 +394,73 @@
   }
 
   function update() {
-    let chunkSize = 1;
-    if (text.length > 28) chunkSize = 4;
-    else if (text.length > 18) chunkSize = 3;
-    else if (text.length > 10) chunkSize = 2;
+    const text = document.getElementById("chat-text").value;
+    const previewBox = document.getElementById("preview-box");
+    const outputCode = document.getElementById("output-code");
+    const charIndicator = document.getElementById("char-indicator");
+    const chunkIndicator = document.getElementById("chunk-indicator");
+    const infoText = document.getElementById("optimization-info");
 
-    const regex = new RegExp(`.{1,${chunkSize}}`, "g");
+    previewBox.innerHTML = "";
+    if (!text) {
+      outputCode.value = "";
+      charIndicator.textContent = "0 / 220";
+      chunkIndicator.textContent = "Hazır";
+      return;
+    }
+
+    const MAX_BUFFER = 220; // Metin2 pano güvenli tavan sınırı
+    const textLen = text.length;
+
+    // MATEMATİKSEL BLOK HESABI:
+    // Her bloğun maliyeti: 12 karakter ("|cFFRRGGBB|H|h") + bloktaki harf sayısı
+    // Toplam karakter = (Blok Sayısı * 12) + textLen <= MAX_BUFFER olmalı.
+    let bestChunkSize = 1;
+    for (let size = 1; size <= 10; size++) {
+      const blockCount = Math.ceil(textLen / size);
+      const estimatedTotal = (blockCount * 12) + textLen;
+      if (estimatedTotal <= MAX_BUFFER) {
+        bestChunkSize = size;
+        break;
+      }
+      bestChunkSize = size; // Sığmasa bile en tasarruflusunu seçer
+    }
+
+    // Bilgi etiketi güncelleme
+    if (bestChunkSize === 1) {
+      chunkIndicator.textContent = "🔤 Harf Harf";
+      infoText.textContent = "Metin kısa: Maksimum detaylı tek tek harf gradyanı yapıldı.";
+    } else {
+      chunkIndicator.textContent = `✨ ${bestChunkSize}'şer Harf`;
+      infoText.textContent = `Metin uzun: Teleport hatasını önlemek için ${bestChunkSize}'şer harf bloklandı.`;
+    }
+
+    // Parçalara bölme
+    const regex = new RegExp(`.{1,${bestChunkSize}}`, "g");
     const chunks = text.match(regex) || [];
     const totalChunks = chunks.length;
 
-    chunks.forEach((chunk, idx) => {
-      const p = totalChunks <= 1 ? 0 : idx / (totalChunks - 1);
-      const hex = calculateColor(p, selectedStops);
+    let finalCode = "";
 
+    chunks.forEach((chunk, idx) => {
+      const progress = totalChunks <= 1 ? 0 : idx / (totalChunks - 1);
+      const hex = calculateColor(progress, selectedStops);
+
+      // Metin2 Formatı: |cFF<HEX>|H|h<PARÇA>
       finalCode += `|cFF${hex}|H|h${chunk}`;
 
+      // Önizleme kutusu
       const sp = document.createElement("span");
       sp.textContent = chunk;
       sp.style.color = `#${hex}`;
       previewBox.appendChild(sp);
     });
-    }
-   const grid = document.getElementById("palette-grid");
-  PALETTES.forEach((p, index) => {
-    const btn = document.createElement("button");
-    btn.className = "palette-btn" + (index === 0 ? " active" : "");
-    
-    const title = document.createElement("span");
-    title.textContent = p.name;
-    btn.appendChild(title);
-
-    const bar = document.createElement("div");
-    bar.className = "palette-bar";
-    bar.style.background = `linear-gradient(90deg, ${p.stops.join(", ")})`;
-    btn.appendChild(bar);
-
-    btn.onclick = () => {
-      document.querySelectorAll(".palette-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      selectedStops = p.stops;
-      update();
-    };
-
-    grid.appendChild(btn);
-  });
-
-    if (effectiveMode === 'char') {
-      const chars = Array.from(text);
-      const visibleCount = chars.filter(c => c !== " ").length;
-      let visibleIdx = 0;
-
-      chars.forEach((c) => {
-        if (c === " ") {
-          const sp = document.createElement("span");
-          sp.innerHTML = "&nbsp;";
-          previewBox.appendChild(sp);
-          finalCode += " ";
-          return;
-        }
-        const p = visibleCount <= 1 ? 0 : visibleIdx / (visibleCount - 1);
-        const hex = calculateColor(p, selectedStops);
-
-        finalCode += `|cFF${hex}|H|h${c}`;
-
-        const sp = document.createElement("span");
-        sp.textContent = c;
-        sp.style.color = `#${hex}`;
-        previewBox.appendChild(sp);
-        visibleIdx++;
-      });
-    } else if (effectiveMode === 'chunk') {
-      // 2'şer karakterlik bloklar
-      const chunks = text.match(/.{1,2}/g) || [];
-      const totalChunks = chunks.length;
-
-      chunks.forEach((chunk, idx) => {
-        const p = totalChunks <= 1 ? 0 : idx / (totalChunks - 1);
-        const hex = calculateColor(p, selectedStops);
-
-        finalCode += `|cFF${hex}|H|h${chunk}`;
-
-        const sp = document.createElement("span");
-        sp.textContent = chunk;
-        sp.style.color = `#${hex}`;
-        previewBox.appendChild(sp);
-      });
-    } else {
-      // Kelime bazlı
-      const words = text.split(" ").filter(w => w.length > 0);
-      const totalWords = words.length;
-
-      words.forEach((w, idx) => {
-        const p = totalWords <= 1 ? 0 : idx / (totalWords - 1);
-        const hex = calculateColor(p, selectedStops);
-
-        finalCode += `|cFF${hex}|H|h${w} `;
-
-        const sp = document.createElement("span");
-        sp.textContent = w + " ";
-        sp.style.color = `#${hex}`;
-        previewBox.appendChild(sp);
-      });
-    }
 
     outputCode.value = finalCode;
 
-    const len = finalCode.length;
-    charIndicator.textContent = `${len} / 256 Karakter`;
-
-    if (len > 256) {
-      charIndicator.className = "char-badge char-danger";
-      limitMsg.textContent = "⚠️ 256 karakteri aştı! Oyuna yapışmaz veya teleport hatası verir.";
-      limitMsg.style.color = "#f85149";
-    } else if (len > 210) {
-      charIndicator.className = "char-badge char-warn";
-      limitMsg.textContent = "Sınıra yaklaşıyorsunuz.";
-      limitMsg.style.color = "#e3b341";
-    } else {
-      charIndicator.className = "char-badge char-safe";
-      limitMsg.textContent = "✓ Güvenli uzunluk. Oyuna kesilmeden yapışır.";
-      limitMsg.style.color = "#56d364";
-    }
+    const totalLen = finalCode.length;
+    charIndicator.textContent = `${totalLen} / 220`;
+    charIndicator.className = "char-badge " + (totalLen <= 220 ? "char-safe" : "char-warn");
   }
 
   // Paletleri Yükle
@@ -597,6 +505,7 @@
 
   document.getElementById("chat-text").addEventListener("input", update);
 
+  // Kopyalama Tetikleyici
   function triggerCopy() {
     const code = document.getElementById("output-code").value;
     if (!code) return;
@@ -605,7 +514,7 @@
       const mainBtn = document.getElementById("copy-code-btn");
       const inlineBtn = document.getElementById("inline-copy-btn");
 
-      mainBtn.textContent = "✓ Kopyalandı!";
+      mainBtn.textContent = "✓ Kopyalandı! (Oyunda CTRL+V Yapın)";
       mainBtn.classList.add("copied-success");
       inlineBtn.textContent = "✓ Kopyalandı";
       inlineBtn.classList.add("copied-success");
