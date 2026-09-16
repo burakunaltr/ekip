@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metin2 Chat Renk & Gradyan Oluşturucu</title>
+  <style>
+    :root {
+      --bg: #090c10;
+      --panel: #161b22;
+      --border: #30363d;
+      --accent: #f0883e;
+      --accent-hover: #ff9b54;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --input-bg: #0d1117;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 740px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.85rem;
+      color: #f0f6fc;
+      margin-bottom: 0.4rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .field-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: -0.5rem;
+    }
+
+    input[type="text"] {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: bold;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    /* Palet Izgarası */
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .palette-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.6rem 0.7rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .palette-btn:hover {
+      border-color: #8b949e;
+      transform: translateY(-1px);
+    }
+
+    .palette-btn.active {
+      border-color: var(--accent);
+      background: rgba(240, 136, 62, 0.08);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .palette-btn span {
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f0f6fc;
+    }
+
+    .palette-bar {
+      height: 6px;
+      width: 100%;
+      border-radius: 4px;
+    }
+
+    /* Özel Renk Seçici */
+    .custom-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+    }
+
+    .custom-row span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .color-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: none;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+      border: 1px solid #444;
+      border-radius: 6px;
+    }
+
+    /* Önizleme Alanı */
+    .chat-preview-box {
+      background: rgba(0, 0, 0, 0.88);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.25rem;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-shadow: 2px 2px 0px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+      overflow-x: auto;
+      white-space: pre;
+      cursor: pointer;
+    }
+
+    /* Dönüştürülmüş Kod Alanı ve Entegre Kopyala Butonu */
+    .output-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-box {
+      width: 100%;
+      height: 85px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #79c0ff;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.85rem;
+      padding: 0.75rem 5.5rem 0.75rem 0.75rem;
+      resize: none;
+      outline: none;
+      line-height: 1.4;
+    }
+
+    .output-copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: #c9d1d9;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .output-copy-btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+      color: #fff;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: -0.5rem;
+    }
+
+    .char-badge {
+      font-weight: bold;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .char-safe { color: #56d364; }
+    .char-warn { color: #e3b341; }
+    .char-danger { color: #f85149; }
+
+    /* Büyük Dönüştürülmüş Metni Kopyala Butonu */
+    .btn-main-copy {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      padding: 0.9rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background 0.15s ease, transform 0.1s;
+    }
+
+    .btn-main-copy:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-main-copy:active {
+      transform: scale(0.99);
+    }
+
+    .copied-success {
+      background: #2ea043 !important;
+      color: #fff !important;
+      border-color: #2ea043 !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Metin2 Sohbet Renk & Gradyan Oluşturucu</h1>
+    <p>Mesajını yaz, stilini seç ve dönüştürülmüş kodu kopyalayıp oyuna yapıştır.</p>
+  </header>
+
+  <div class="card">
+    <div class="field-title">Yazılacak Mesaj</div>
+    <input type="text" id="chat-text" value="" placeholder="Mesajınızı yazın..." maxlength="35" />
+
+    <div class="field-title">Hazır Renk Stilleri</div>
+    <div class="palette-grid" id="palette-grid"></div>
+
+    <div class="custom-row">
+      <span>Özel Gradyan:</span>
+      <div class="color-input-wrapper">
+        <label>1:</label>
+        <input type="color" id="custom-c1" value="#FF0055">
+      </div>
+      <div class="color-input-wrapper">
+        <label>2:</label>
+        <input type="color" id="custom-c2" value="#FFCC00">
+      </div>
+      <div class="color-input-wrapper">
+        <label>3:</label>
+        <input type="color" id="custom-c3" value="#FFFFFF">
+      </div>
+    </div>
+
+    <div class="field-title">Oyun İçi Önizleme (Kopyalamak için tıkla)</div>
+    <div class="chat-preview-box" id="preview-box" title="Kodu kopyalamak için tıklayın"></div>
+
+    <div class="field-title">Dönüştürülmüş Metin2 Kodu</div>
+    <div class="output-container">
+      <textarea class="output-box" id="output-code" readonly></textarea>
+      <button class="output-copy-btn" id="inline-copy-btn">Kopyala</button>
+    </div>
+
+    <div class="status-bar">
+      <span>Metin2 chat satırı ~100 karakter sınırına sahiptir.</span>
+      <span id="char-indicator" class="char-badge char-safe">0 Karakter</span>
+    </div>
+
+    <button class="btn-main-copy" id="copy-code-btn">📋 Dönüştürülmüş Metni Kopyala</button>
+  </div>
+</div>
+
+<script>
+  const PALETTES = [
+    { name: "🔥 Altın Alevi", stops: ["#FF4500", "#FFB700", "#FFFFFF"] },
+    { name: "⚡ Elektrik Neon", stops: ["#0055FF", "#00F0FF", "#FFFFFF"] },
+    { name: "✨ Ayna Parlama", stops: ["#FF5500", "#FFFFFF", "#FF5500"] },
+    { name: "🟡 Sarı ➔ Beyaz", stops: ["#FFFF00", "#FFFFFF"] },
+    { name: "🧪 Zehir Yeşili", stops: ["#006600", "#00FF66", "#FFFFFF"] },
+    { name: "🩸 Kan Kırmızısı", stops: ["#4a0000", "#FF0000", "#FFAAAA"] },
+    { name: "🔮 Ametist / Mor", stops: ["#4b0082", "#b829ea", "#FFFFFF"] },
+    { name: "🌸 Sakura Pembe", stops: ["#b5179e", "#f72585", "#FFFFFF"] },
+    { name: "🧊 Buzul Kristal", stops: ["#002244", "#5bc0be", "#FFFFFF"] },
+    { name: "👑 Ejder Zümrüdü", stops: ["#004b23", "#38b000", "#ccff33"] },
+    { name: "🌅 Gün Batımı", stops: ["#480ca8", "#f72585", "#fee440"] },
+    { name: "🖤 Gümüş Çelik", stops: ["#333333", "#999999", "#FFFFFF"] },
+    { name: "🔵 Mavi ➔ Sarı", stops: ["#0080FF", "#00FFCC", "#FFFF00"] },
+    { name: "🌈 Gökkuşağı", stops: ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#00F0FF", "#9900FF"] }
+  ];
+
+  let selectedStops = PALETTES[0].stops;
+
+  function hexToRgb(hex) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    return [
+      parseInt(hex.substring(0, 2), 16),
+      parseInt(hex.substring(2, 4), 16),
+      parseInt(hex.substring(4, 6), 16)
+    ];
+  }
+
+  function rgbToHex(r, g, b) {
+    const toHex = (n) => Math.min(255, Math.max(0, Math.round(n))).toString(16).padStart(2, "0").toUpperCase();
+    return `${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  function interpolateRgb(c1, c2, t) {
+    return [
+      c1[0] + (c2[0] - c1[0]) * t,
+      c1[1] + (c2[1] - c1[1]) * t,
+      c1[2] + (c2[2] - c1[2]) * t
+    ];
+  }
+
+  function calculateColor(progress, stops) {
+    if (stops.length === 1) return stops[0].replace("#", "").toUpperCase();
+    const segCount = stops.length - 1;
+    const rawSeg = progress * segCount;
+    const segIdx = Math.min(Math.floor(rawSeg), segCount - 1);
+    const t = rawSeg - segIdx;
+
+    const c1 = hexToRgb(stops[segIdx]);
+    const c2 = hexToRgb(stops[segIdx + 1]);
+    const res = interpolateRgb(c1, c2, t);
+    return rgbToHex(res[0], res[1], res[2]);
+  }
+
+  function update() {
+    const text = document.getElementById("chat-text").value;
+    const previewBox = document.getElementById("preview-box");
+    const outputCode = document.getElementById("output-code");
+    const charIndicator = document.getElementById("char-indicator");
+
+    previewBox.innerHTML = "";
+    let finalCode = "";
+
+    const chars = Array.from(text);
+    const visibleCount = chars.filter(c => c !== " ").length;
+    let visibleIndex = 0;
+
+    chars.forEach((char) => {
+      if (char === " ") {
+        const space = document.createElement("span");
+        space.innerHTML = "&nbsp;";
+        previewBox.appendChild(space);
+        finalCode += " ";
+        return;
+      }
+
+      const progress = visibleCount <= 1 ? 0 : visibleIndex / (visibleCount - 1);
+      const hex = calculateColor(progress, selectedStops);
+
+      finalCode += `|cFF${hex}|H|h${char}`;
+
+      const charSpan = document.createElement("span");
+      charSpan.textContent = char;
+      charSpan.style.color = `#${hex}`;
+      previewBox.appendChild(charSpan);
+
+      visibleIndex++;
+    });
+
+    outputCode.value = finalCode;
+
+    const length = finalCode.length;
+    charIndicator.textContent = `${length} Karakter`;
+    charIndicator.className = "char-badge " + (length <= 70 ? "char-safe" : length <= 120 ? "char-warn" : "char-danger");
+  }
+
+  // Paletleri Yükle
+  const grid = document.getElementById("palette-grid");
+  PALETTES.forEach((p, index) => {
+    const btn = document.createElement("button");
+    btn.className = "palette-btn" + (index === 0 ? " active" : "");
+    
+    const title = document.createElement("span");
+    title.textContent = p.name;
+    btn.appendChild(title);
+
+    const bar = document.createElement("div");
+    bar.className = "palette-bar";
+    bar.style.background = `linear-gradient(90deg, ${p.stops.join(", ")})`;
+    btn.appendChild(bar);
+
+    btn.onclick = () => {
+      document.querySelectorAll(".palette-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedStops = p.stops;
+      update();
+    };
+
+    grid.appendChild(btn);
+  });
+
+  // Özel Renk Seçiciler
+  const c1 = document.getElementById("custom-c1");
+  const c2 = document.getElementById("custom-c2");
+  const c3 = document.getElementById("custom-c3");
+
+  function applyCustomColors() {
+    document.querySelectorAll(".palette-btn").forEach(b => b.classList.remove("active"));
+    selectedStops = [c1.value, c2.value, c3.value];
+    update();
+  }
+
+  c1.addEventListener("input", applyCustomColors);
+  c2.addEventListener("input", applyCustomColors);
+  c3.addEventListener("input", applyCustomColors);
+
+  document.getElementById("chat-text").addEventListener("input", update);
+
+  // Dönüştürülmüş Kodu Kopyalama
+  function triggerCopy() {
+    const code = document.getElementById("output-code").value;
+    if (!code) return;
+
+    navigator.clipboard.writeText(code).then(() => {
+      const mainBtn = document.getElementById("copy-code-btn");
+      const inlineBtn = document.getElementById("inline-copy-btn");
+
+      mainBtn.textContent = "✓ Dönüştürülmüş Metin Kopyalandı!";
+      mainBtn.classList.add("copied-success");
+
+      inlineBtn.textContent = "✓ Kopyalandı";
+      inlineBtn.classList.add("copied-success");
+
+      setTimeout(() => {
+        mainBtn.textContent = "📋 Dönüştürülmüş Metni Kopyala";
+        mainBtn.classList.remove("copied-success");
+        inlineBtn.textContent = "Kopyala";
+        inlineBtn.classList.remove("copied-success");
+      }, 1500);
+    });
+  }
+
+  document.getElementById("copy-code-btn").addEventListener("click", triggerCopy);
+  document.getElementById("inline-copy-btn").addEventListener("click", triggerCopy);
+  document.getElementById("preview-box").addEventListener("click", triggerCopy);
+
+  update();
+</script>
+
+</body>
+</html>
