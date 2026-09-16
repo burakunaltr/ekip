@@ -432,21 +432,26 @@
   }
 
   function update() {
-    const text = document.getElementById("chat-text").value;
-    const previewBox = document.getElementById("preview-box");
-    const outputCode = document.getElementById("output-code");
-    const charIndicator = document.getElementById("char-indicator");
-    const limitMsg = document.getElementById("limit-msg");
+    let chunkSize = 1;
+    if (text.length > 28) chunkSize = 4;
+    else if (text.length > 18) chunkSize = 3;
+    else if (text.length > 10) chunkSize = 2;
 
-    previewBox.innerHTML = "";
-    let finalCode = "";
+    const regex = new RegExp(`.{1,${chunkSize}}`, "g");
+    const chunks = text.match(regex) || [];
+    const totalChunks = chunks.length;
 
-    // Mod belirleme
-    let effectiveMode = currentMode;
-    if (currentMode === 'auto') {
-      if (text.length <= 14) effectiveMode = 'char';
-      else if (text.length <= 32) effectiveMode = 'chunk';
-      else effectiveMode = 'word';
+    chunks.forEach((chunk, idx) => {
+      const p = totalChunks <= 1 ? 0 : idx / (totalChunks - 1);
+      const hex = calculateColor(p, selectedStops);
+
+      finalCode += `|cFF${hex}|H|h${chunk}`;
+
+      const sp = document.createElement("span");
+      sp.textContent = chunk;
+      sp.style.color = `#${hex}`;
+      previewBox.appendChild(sp);
+    });
     }
 
     if (effectiveMode === 'char') {
